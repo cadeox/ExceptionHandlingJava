@@ -42,19 +42,19 @@ public class Account
 		return m_accountBalance;
 	}
 	
+	String getAccountNumber()
+	{
+		return m_accountNumber;
+	}
+	
+	String getAccountPassword()
+	{
+		return m_accountPassword;
+	}
+	
 	double getAccountBalance()
 	{
 		return m_accountBalance;
-	}
-	
-	boolean checkAccountPassword(String password)
-	{
-		boolean result = false;
-		if(password.equals(m_accountPassword))
-		{
-			result = true;
-		}
-		return result;
 	}
 	
 	private String m_ownerSurname;

@@ -1,24 +1,69 @@
 package exceptionHandlingJava;
-import java.util.InputMismatchException;
-import static javax.swing.JOptionPane.*;
-
-class OutOfRangeException extends InputMismatchException
-{
-    public OutOfRangeException(String message)
-    {
-        super (message);
-    }
-}
 
 public class ExceptionHandling
 {
+	//Method for printing an Application Introduction Text
+	private static void printApplicationIntoduction()
+	{
+		System.out.printf("------------------------------------------------%n"
+						+ "Welcome to the Bank Simulation Application!%n"
+						+ "This Application is intendet for educational and demonstrational purpuses only.%n"
+						+ "The primary goal of this Application is to show a functionability of Exceptions Handling in Java.%n"
+						+ "Methods and classes of this application were intentionaly modified to accompliment Exceptions Handling Features inside the Programm.%n"
+						+ "The Programm was build as a simulation of common day to day actions between banks and private customers.%n"
+						+ "Please enjoy and have a nice day!%n"
+						+ "------------------------------------------------%n");
+	}
+	
+	//Method for printing the Information for Stage 1: Object Initialization
+	private static void printStageOneInformation()
+	{
+		System.out.printf("Stage 1: Initialization of all needed Objects.%n"
+						+ "This Stage of Application creates most of the Objects, that will be used in this Simulation.%n"
+						+ "Some Objects will provide important information (like Account Numbers of newly created Accounts), "
+						+ "that will be used during the simulation.%n"
+						+ "------------------------------------------------%n");
+	}
+	
+	//Method for printing the Information for Stage 1: Object Initialization
+	private static void printStageTwoInformation()
+	{
+		System.out.printf("------------------------------------------------%n"
+						+ "Stage 2: Simulation of Customer and Bank interactions.%n"
+						+ "This Stage of Application will simulate interactions of createt Private Customers Objects with Bank Object.%n"
+						+ "Each customer has different starting situations and need different interactions accordingly.%n"
+						+ "This Stage is userinput sensitive and depends on knowledge of Information about Customers Accounts.%n"
+						+ "------------------------------------------------%n");
+	}
+		
+	//Method for printing an Application Closure Text
+		private static void printApplicationClosure()
+		{
+			System.out.printf("------------------------------------------------%n"
+							+ "This is the End of Simulation.%n"
+							+ "Thank you for using Bank Simulation Application!%n"
+							+ "Have a nice day!%n"
+							+ "------------------------------------------------%n");
+		}	
+	
+	
 	public static void main(String[] args)
 	{
-		//1) Creating all needed Objects.
-		//1.1) Creating all customers Objects.
+		//0) Printing start information.
+		printApplicationIntoduction();
+		
+		//1) Stage 1: Objects Initialization.
+		//1.0) Printing Stage 1 Information.
+		printStageOneInformation();
+		
+		//1.1) Creating all customers Objects and calling there checkCash() methods.
 		PrivateCustomer maxMusterman = new PrivateCustomer("Max", "Musterman", 0);
 		PrivateCustomer lisaMusterfrau = new PrivateCustomer("Lisa", "Musterfrau", 1000);
 		PrivateCustomer fabianMüller = new PrivateCustomer("Fabian", "Müller", 200);
+		
+		maxMusterman.checkCash();
+		lisaMusterfrau.checkCash();
+		fabianMüller.checkCash();
 		
 		//1.2) Creating bank Object.
 		Bank sparkasse = new Bank();
@@ -27,51 +72,23 @@ public class ExceptionHandling
 		sparkasse.createNewAccount(maxMusterman.m_surname, maxMusterman.m_lastname, "max1234", 5000);
 		sparkasse.createNewAccount(lisaMusterfrau.m_surname, lisaMusterfrau.m_lastname, "lisa5678", 0);
 
-		//2) Realizing all needed scenarios.
+		//2) Stage 2: Simulation of Customer and Bank interactions.
+		//2.0) Printing Stage 2 Information.
+		printStageTwoInformation();
+		
 		//2.1) Customer Max Musterman.
-		maxMusterman.checkCash();
 		sparkasse.serveCustomer(maxMusterman);
+		maxMusterman.checkCash();
 		
 		//2.2) Customer Lisa Musterman.
+		sparkasse.serveCustomer(lisaMusterfrau);
 		lisaMusterfrau.checkCash();
 		
 		//2.3) Customer Fabian Müller.
+		sparkasse.serveCustomer(fabianMüller);
+		fabianMüller.checkCash();
 		
-		//2.4) .
-		
-		//2.5) .
-		
-		//2.6) .
-		
-		
-		/*
-		double kontostand=0.00;
-		
-		
-		String eOderA=showInputDialog("E oder A"); //Abfrage, ob Einzahlung oder Auszahlung gewollt ist
-		
-		try
-		{
-			System.out.println("Welcher Betrag soll überwiesen weden?");
-			double uberweisungBetrag = eingabe.nextDouble();
-			if(uberweisungBetrag<0)
-			{
-				throw new OutOfRangeException ("Negative Beträge können nicht eingezahlt werden.");
-			}
-		}
-		catch(Exception e)
-		{
-			System.out.println("Fehler: Bitte geben Sie eine Zahl ein.");
-			
-			//IF Funktion zur Berechnung des Kontostands
-			//kontostand = kontostand + uberweisungBetrag;
-			//System.out.println("Eingabe:" + uberweisungBetrag);
-			
-			System.out.println(kontostand);
-			System.out.println(eOderA); 
-		}
-		*/
-		
-		
+		//3) Printing closure information
+		printApplicationClosure();
 	}
 }
