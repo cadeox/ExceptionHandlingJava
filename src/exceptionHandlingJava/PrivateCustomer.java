@@ -8,13 +8,14 @@ public class PrivateCustomer
 		m_surname = surname;
 		m_lastname = lastname;
 		m_cash = cash;
+		Logger.getInstance().print(TextTemplate.CreationOfPrivateCustomerText, m_surname, m_lastname);
 		System.out.printf("New Private Customer %s %s was created.%n", m_surname, m_lastname);
 	}
 	
 	//Methods for Actions of Private Customers
 	void checkCash()
 	{
-		System.out.printf("%s's cash amount at the moment is %.2f EUR.%n", m_surname, m_cash);
+		Logger.getInstance().print(TextTemplate.CashCheckOfPrivateCustomerText, m_surname, m_cash);
 	}
 	
 	//Member Fields for every Object of class PrivateCustomer

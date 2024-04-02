@@ -2,59 +2,15 @@ package exceptionHandlingJava;
 
 public class ExceptionHandling
 {
-	//Method for printing an Application Introduction Text
-	private static void printApplicationIntoduction()
-	{
-		System.out.printf("------------------------------------------------%n"
-						+ "Welcome to the Bank Simulation Application!%n"
-						+ "This Application is intendet for educational and demonstrational purpuses only.%n"
-						+ "The primary goal of this Application is to show a functionability of Exceptions Handling in Java.%n"
-						+ "Methods and classes of this application were intentionaly modified to accompliment Exceptions Handling Features inside the Programm.%n"
-						+ "The Programm was build as a simulation of common day to day actions between banks and private customers.%n"
-						+ "Please enjoy and have a nice day!%n"
-						+ "------------------------------------------------%n");
-	}
-	
-	//Method for printing the Information for Stage 1: Object Initialization
-	private static void printStageOneInformation()
-	{
-		System.out.printf("Stage 1: Initialization of all needed Objects.%n"
-						+ "This Stage of Application creates most of the Objects, that will be used in this Simulation.%n"
-						+ "Some Objects will provide important information (like Account Numbers of newly created Accounts), "
-						+ "that will be used during the simulation.%n"
-						+ "------------------------------------------------%n");
-	}
-	
-	//Method for printing the Information for Stage 1: Object Initialization
-	private static void printStageTwoInformation()
-	{
-		System.out.printf("------------------------------------------------%n"
-						+ "Stage 2: Simulation of Customer and Bank interactions.%n"
-						+ "This Stage of Application will simulate interactions of createt Private Customers Objects with Bank Object.%n"
-						+ "Each customer has different starting situations and need different interactions accordingly.%n"
-						+ "This Stage is userinput sensitive and depends on knowledge of Information about Customers Accounts.%n"
-						+ "------------------------------------------------%n");
-	}
-		
-	//Method for printing an Application Closure Text
-		private static void printApplicationClosure()
-		{
-			System.out.printf("------------------------------------------------%n"
-							+ "This is the End of Simulation.%n"
-							+ "Thank you for using Bank Simulation Application!%n"
-							+ "Have a nice day!%n"
-							+ "------------------------------------------------%n");
-		}	
-	
-	
 	public static void main(String[] args)
 	{
 		//0) Printing start information.
-		printApplicationIntoduction();
+		
+		Logger.getInstance().print(TextTemplate.ApplicationOpenningText);
 		
 		//1) Stage 1: Objects Initialization.
 		//1.0) Printing Stage 1 Information.
-		printStageOneInformation();
+		Logger.getInstance().print(TextTemplate.ApplicationStageOneText);
 		
 		//1.1) Creating all customers Objects and calling there checkCash() methods.
 		PrivateCustomer maxMusterman = new PrivateCustomer("Max", "Musterman", 0);
@@ -74,7 +30,7 @@ public class ExceptionHandling
 
 		//2) Stage 2: Simulation of Customer and Bank interactions.
 		//2.0) Printing Stage 2 Information.
-		printStageTwoInformation();
+		Logger.getInstance().print(TextTemplate.ApplicationStageTwoText);
 		
 		//2.1) Customer Max Musterman.
 		sparkasse.serveCustomer(maxMusterman);
@@ -89,6 +45,6 @@ public class ExceptionHandling
 		fabianMüller.checkCash();
 		
 		//3) Printing closure information
-		printApplicationClosure();
+		Logger.getInstance().print(TextTemplate.ApplicationClosureText);
 	}
 }

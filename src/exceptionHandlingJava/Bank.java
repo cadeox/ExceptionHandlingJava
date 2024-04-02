@@ -11,7 +11,8 @@ enum BankService
 	BankService_Withdraw,
 	BankService_Deposit,
 	BankService_Transfer,
-	BankService_CloseService
+	BankService_CloseService,
+	BankService_Default
 }
 
 public class Bank
@@ -20,6 +21,7 @@ public class Bank
 	Bank()
 	{
 		m_savedAccounts = new HashMap<>();
+		m_lastnameToAccountMapping = new HashMap<>();
 		m_servicesList = new HashMap<>();
 		m_randomizer = new Random();
 		
@@ -37,86 +39,58 @@ public class Bank
 		
 		if(isCustomerAuthenticationSuccessful(customer, customerInputScanner))
 		{
-			
-			System.out.printf("------------------------------------------------%n"
-							+ "Welcome back %s %s!%n"
-							+ "How can we help you?%n"
-							+ "-For Balance Check please write \"Balance\".%n"
-							+ "-For Money Withdraw please write \"Withdraw\".%n"
-							+ "-For Money Deposit plaese write \"Deposit\".%n"
-							+ "-For Money Transfer between acoounts please write \"Transfer\".%n"
-							+ "-For Exiting the Application please write \"Exit\"%n"
-							+ "------------------------------------------------%n",
-							customer.m_surname, customer.m_lastname);
-			String serviceRequest = customerInputScanner.next();
-			
-			while(!m_servicesList.containsKey(serviceRequest))
+			boolean isServiceRequired = true;
+			while(isServiceRequired)
 			{
-				System.out.printf("------------------------------------------------%n"
-								+ "You have enteren invalid command: %s.%n"
-								+ "Please enter valid service command: ", serviceRequest);
-				serviceRequest = customerInputScanner.next();
-			}
-			switch(m_servicesList.get(serviceRequest))
-			{
-			case BankService_BalanceCheck:
-				checkBalanceOfAccount(customerInputScanner);
-				break;
-			case BankService_Withdraw:
-				withdrawMoneyFromAccount();
-				break;
-			case BankService_Deposit:
-				depositMoneyToAccount();
-				break;
-			case BankService_Transfer:
-				transferMoneyToDifferentAccount();
-				break;
-			case BankService_CloseService:
-				logOutOfAccount();
-				break;
-			default:
-				break;
+				BankService service= acquierCustomerServiceRequest(customer, customerInputScanner);
+				switch(service)
+				{
+				
+				case BankService_BalanceCheck:
+					isServiceRequired = checkBalanceOfAccount(customer, customerInputScanner);
+					break;
+				case BankService_Withdraw:
+					isServiceRequired = withdrawMoneyFromAccount(customer, customerInputScanner);
+					break;
+				case BankService_Deposit:
+					isServiceRequired = depositMoneyToAccount(customer, customerInputScanner);
+					break;
+				case BankService_Transfer:
+					isServiceRequired = transferMoneyToDifferentAccount(customer, customerInputScanner);
+					break;
+				default:
+					break;
+				}
 			}
 		}
-		else
-		{
-			logOutOfAccount();
-		}
-			
+		logOutOfAccount();
 	}
 	
 	void createNewAccount(String surname, String lastname, String password, double openingBalance)
 	{
 		String accountNumber = generateNewAccountNumber();
 		Account account = new Account(surname, lastname, accountNumber, password, openingBalance);
-		m_savedAccounts.put(lastname, account);
-		System.out.printf("New Account with Opening Balance of %.2f EUR was created for %s %s with Number: %s and Password: %s.%n",
-							openingBalance, surname, lastname, accountNumber, password);
+		m_savedAccounts.put(accountNumber, account);
+		m_lastnameToAccountMapping.put(lastname, accountNumber);
+		Logger.getInstance().print(TextTemplate.SuccessfullCreationOfNewAccountText,
+									openingBalance, surname, lastname, accountNumber, password);
 	}
 	
-	void createNewAccount(PrivateCustomer customer, Scanner scanner)
+	private void createNewAccount(PrivateCustomer customer, Scanner scanner)
 	{
 		String accountNumber = generateNewAccountNumber();
 		String accountPassword = null;
 		double openingBalance = 0;
-		
-		System.out.printf("------------------------------------------------%n"
-						+ "Please create a Password for your Account: ");
+		Logger.getInstance().print(TextTemplate.SystemRequestForCreatingNewPasswordText);
 		accountPassword = scanner.next();
-		System.out.printf("------------------------------------------------%n"
-						+ "You have created following Password for your Account: %s%n"
-						+ "------------------------------------------------%n"
-						+ "Would you like to deposit some opening balance to your Account?%n"
-						+ "Please enter \"Yes\" or \"No\": ",
-						accountPassword);
+		Logger.getInstance().print(TextTemplate.SuccessfullCreationOfNewPasswordText);
+		Logger.getInstance().print(TextTemplate.SystemRequestForDepositingOpenningBalanceText, accountPassword);
 		while(true)
 		{
 			String customerReply = scanner.next();
 			if(customerReply.equals("Yes"))
 			{
-				System.out.printf("------------------------------------------------%n"
-						+ "How much would you like to deposit?%n"
-						+ "Please enter wished deposit amount: ");
+				Logger.getInstance().print(TextTemplate.SystemRequestForOpenningBalanceAmmountText);
 				while(true)
 				{
 					openingBalance = scanner.nextDouble();
@@ -128,9 +102,7 @@ public class Bank
 					}
 					else
 					{
-						System.out.printf("------------------------------------------------%n"
-								+ "Not sufficient funds.%n"
-								+ "Please enter wished deposit amount: ");
+						Logger.getInstance().print(TextTemplate.InsufficientFundsText);
 					}
 				}
 				
@@ -142,63 +114,237 @@ public class Bank
 			}
 			else
 			{
-				System.out.printf("You have entered \"%s\".%n"
-								+ "Please enter \"Yes\" or \"No\", if you would like to deposit some opening balance to your Account: ",
-								customerReply);
+				Logger.getInstance().print(TextTemplate.InvalidYesOrNoInputText,
+											customerReply);
 			}
 		}
 		
 		Account account = new Account(customer.m_surname, customer.m_lastname, accountNumber, accountPassword, openingBalance);
-		m_savedAccounts.put(customer.m_lastname, account);
-		System.out.printf("New Account with Opening Balance of %.2f EUR was created for %s %s with Number: %s and Password: %s.%n",
-							openingBalance, customer.m_surname, customer.m_lastname, accountNumber, accountPassword);
+		m_savedAccounts.put(accountNumber, account);
+		m_lastnameToAccountMapping.put(customer.m_lastname, accountNumber);
+		Logger.getInstance().print(TextTemplate.SuccessfullCreationOfNewAccountText,
+									openingBalance, customer.m_surname, customer.m_lastname, accountNumber, accountPassword);
 	}
 
 	private void logOutOfAccount()
 	{
-		System.out.printf("Thank you for using Sparkasse Bank! Have a nice day!%n"
-						+ "------------------------------------------------%n");
+		Logger.getInstance().print(TextTemplate.GeneralClosureText);
 	}
 	
-	private void checkBalanceOfAccount(Scanner scanner)
+	private boolean checkBalanceOfAccount(PrivateCustomer customer, Scanner scanner)
 	{
-		System.out.printf("Account Balance now is: %.2f%nCan we help you with somthing else?%nPlease enter \"Yes\" od \"No\":%n", 
-						m_savedAccounts.get(s_sessionAccountNumber).getAccountBalance());
+		boolean isServiceRequired = true;
+		Logger.getInstance().print(TextTemplate.BalanceCheckText,
+									m_savedAccounts.get(customer.m_lastname).getAccountBalance());
+		Logger.getInstance().print(TextTemplate.SystemRequestForFurtherServicesText);
 		String nextStepInput;
 		while(true)
 		{
 			nextStepInput = scanner.next();
 			if(nextStepInput.equals("Yes"))
 			{
-				
 				break;
 			}
 			else if(nextStepInput.equals("No"))
 			{
-				logOutOfAccount();
+				isServiceRequired = false;
 				break;
 			}
 			else
 			{
-				System.out.printf("Unfortunately your Input %s was invalid.%nPlease enter \"Yes\" or \"No\":%n", nextStepInput);
-			}	
+				Logger.getInstance().print(TextTemplate.InvalidInputGeneralText,
+											nextStepInput);
+			}
 		}
-		
+		return isServiceRequired;
 	}
 	
-	private void withdrawMoneyFromAccount()
+	private boolean withdrawMoneyFromAccount(PrivateCustomer customer, Scanner scanner)
 	{
-		
+		boolean isServiceRequired = true;
+		double withdrawAmmount;
+		String nextStepInput;
+		Logger.getInstance().print(TextTemplate.SystemRequestForWithdrawAmmountText,
+									m_savedAccounts.get(customer.m_lastname).getAccountBalance());
+		while(true)
+		{
+			//TODO check for negative inputs and strings as input
+			withdrawAmmount = scanner.nextDouble();
+			if(withdrawAmmount <= m_savedAccounts.get(customer.m_lastname).getAccountBalance())
+			{
+				m_savedAccounts.get(customer.m_lastname).changeAccountBalance(BalanceAction.BalanceAction_Withdraw, withdrawAmmount);
+				customer.m_cash += withdrawAmmount;
+				Logger.getInstance().print(TextTemplate.SuccessfullWithdrawText,
+											withdrawAmmount, m_savedAccounts.get(customer.m_lastname).getAccountBalance());
+				break;
+			}
+			else
+			{
+				Logger.getInstance().print(TextTemplate.InvalidInputGeneralText,
+											String.valueOf(withdrawAmmount));
+			}
+		}
+		Logger.getInstance().print(TextTemplate.SystemRequestForFurtherServicesText);
+		while(true)
+		{
+			nextStepInput = scanner.next();
+			if(nextStepInput.equals("Yes"))
+			{
+				break;
+			}
+			else if(nextStepInput.equals("No"))
+			{
+				isServiceRequired = false;
+				break;
+			}
+			else
+			{
+				Logger.getInstance().print(TextTemplate.InvalidInputGeneralText,
+											nextStepInput);
+			}
+		}
+		return isServiceRequired;
 	}
 	
-	private void depositMoneyToAccount()
+	private boolean depositMoneyToAccount(PrivateCustomer customer, Scanner scanner)
 	{
-		
+		boolean isServiceRequired = true;
+		double depositAmmount;
+		String nextStepInput;
+		Logger.getInstance().print(TextTemplate.SystemRequestForDepositAmmountText, 
+								m_savedAccounts.get(s_sessionAccountNumber).getAccountBalance());
+
+		while(true)
+		{
+			//TODO check for negative inputs and strings as input
+			depositAmmount = scanner.nextDouble();
+			if(depositAmmount <= customer.m_cash)
+			{
+				m_savedAccounts.get(s_sessionAccountNumber).changeAccountBalance(BalanceAction.BalanceAction_Deposit, depositAmmount);
+				customer.m_cash -= depositAmmount;
+				Logger.getInstance().print(TextTemplate.SuccessfullDepositText,
+								depositAmmount, m_savedAccounts.get(s_sessionAccountNumber).getAccountBalance());
+				break;
+			}
+			else if(depositAmmount > customer.m_cash)
+			{
+				Logger.getInstance().print(TextTemplate.InsufficientFundsText);
+			}
+			else
+			{
+				Logger.getInstance().print(TextTemplate.InvalidInputGeneralText,
+											String.valueOf(depositAmmount));
+			}
+		}
+		Logger.getInstance().print(TextTemplate.SystemRequestForFurtherServicesText);
+		while(true)
+		{
+			nextStepInput = scanner.next();
+			if(nextStepInput.equals("Yes"))
+			{
+				break;
+			}
+			else if(nextStepInput.equals("No"))
+			{
+				isServiceRequired = false;
+				break;
+			}
+			else
+			{
+				Logger.getInstance().print(TextTemplate.InvalidInputGeneralText,
+											nextStepInput);
+			}
+		}
+		return isServiceRequired;
 	}
 	
-	private void transferMoneyToDifferentAccount()
+	//TODO
+	private boolean transferMoneyToDifferentAccount(PrivateCustomer customer, Scanner scanner)
 	{
-		
+		boolean isServiceRequired = true;
+		double transferAmmount;
+		String accountToTransferTo;
+		String nextStepInput;
+		Logger.getInstance().print(TextTemplate.SystemRequestForTransferAmmountText, 
+								m_savedAccounts.get(s_sessionAccountNumber).getAccountBalance());
+		while(true)
+		{
+			//TODO check for negative inputs and strings as input
+			transferAmmount = scanner.nextDouble();
+			if(transferAmmount <= m_savedAccounts.get(s_sessionAccountNumber).getAccountBalance())
+			{
+				break;
+			}
+			else if(transferAmmount > m_savedAccounts.get(s_sessionAccountNumber).getAccountBalance())
+			{
+				Logger.getInstance().print(TextTemplate.InsufficientFundsText);
+			}
+			else
+			{
+				Logger.getInstance().print(TextTemplate.InvalidInputGeneralText,
+											String.valueOf(transferAmmount));
+			}
+		}
+		Logger.getInstance().print(TextTemplate.SystemRequestForTransferAccountText);
+		while(true)
+		{
+			//TODO check for negative inputs and strings as input
+			accountToTransferTo = scanner.next();
+			if(m_savedAccounts.containsKey(accountToTransferTo))
+			{
+				m_savedAccounts.get(s_sessionAccountNumber).changeAccountBalance(BalanceAction.BalanceAction_Withdraw, transferAmmount);
+				m_savedAccounts.get(accountToTransferTo).changeAccountBalance(BalanceAction.BalanceAction_Deposit, transferAmmount);
+				Logger.getInstance().print(TextTemplate.SuccessfullTransferText,
+						transferAmmount, accountToTransferTo, m_savedAccounts.get(s_sessionAccountNumber).getAccountBalance());
+				break;
+			}
+			else
+			{
+				Logger.getInstance().print(TextTemplate.InvalidTransferAccountNumberEnteredText,
+											accountToTransferTo);
+				while(true)
+				{
+					nextStepInput = scanner.next();
+					if(nextStepInput.equals("Yes"))
+					{
+						transferMoneyToDifferentAccount(customer, scanner);
+						break;
+					}
+					else if(nextStepInput.equals("No"))
+					{
+						isServiceRequired = false;
+						break;
+					}
+					else
+					{
+						Logger.getInstance().print(TextTemplate.InvalidInputGeneralText,
+													nextStepInput);
+					}
+					break;
+				}
+				break;
+			}
+		}
+		Logger.getInstance().print(TextTemplate.SystemRequestForFurtherServicesText);
+		while(true)
+		{
+			nextStepInput = scanner.next();
+			if(nextStepInput.equals("Yes"))
+			{
+				break;
+			}
+			else if(nextStepInput.equals("No"))
+			{
+				isServiceRequired = false;
+				break;
+			}
+			else
+			{
+				Logger.getInstance().print(TextTemplate.InvalidInputGeneralText,
+											nextStepInput);
+			}
+		}
+		return isServiceRequired;
 	}
 	
 	private String generateNewAccountNumber()
@@ -232,9 +378,8 @@ public class Bank
 		}
 		else
 		{
-			System.out.printf("It looks like, there is no Account under your name: %s %s.%n"
-							+ "Would you like to open new Account?%n"
-							+ "Please enter \"Yes\" or \"No\": ", customer.m_surname, customer.m_lastname);
+			Logger.getInstance().print(TextTemplate.AccountUnderTheNameNotFoundOpenNewOneText,
+										customer.m_surname, customer.m_lastname);
 			while(true)
 			{
 				String customerReply = scanner.next();
@@ -246,14 +391,11 @@ public class Bank
 				}
 				else if(customerReply.equals("No"))
 				{
-					logOutOfAccount();
 					break;
 				}
 				else
 				{
-					System.out.printf("You have entered \"%s\".%n"
-									+ "Please enter \"Yes\" or \"No\", if you would like to procede with opening a new Account: ",
-									customerReply);
+					Logger.getInstance().print(TextTemplate.InvalidYesOrNoInputText, customerReply);
 				}
 			}
 		}
@@ -263,12 +405,12 @@ public class Bank
 	private boolean checkAccountExistence(PrivateCustomer customer)
 	{
 		boolean result = false;
-		System.out.printf("Welcome to Sparkasse Bank!\n");
-		if(m_savedAccounts.containsKey(customer.m_lastname))
+		Logger.getInstance().print(TextTemplate.GeneralWelcomeText);
+		if(m_lastnameToAccountMapping.containsKey(customer.m_lastname))
 		{
 			result = true;
-			s_sessionAccountNumber = m_savedAccounts.get(customer.m_lastname).getAccountNumber();
-			s_sessionAccountPassword = m_savedAccounts.get(customer.m_lastname).getAccountPassword();
+			s_sessionAccountNumber = m_savedAccounts.get(m_lastnameToAccountMapping.get(customer.m_lastname)).getAccountNumber();
+			s_sessionAccountPassword = m_savedAccounts.get(s_sessionAccountNumber).getAccountPassword();
 		}
 		return result;
 	}
@@ -278,21 +420,17 @@ public class Bank
 		boolean result = false;
 		int inputTrys = 3;
 		
-		System.out.printf("Please enter your Account Number: ");
+		Logger.getInstance().print(TextTemplate.SystemRequestForAccountNumberText);
 		
 		while(result == false)
 		{
 			if(inputTrys <= 0)
 			{
-				System.out.printf("------------------------------------------------%n"
-						+ "You've entered wrong Account Number and there are no more Retrys left.%n"
-						+ "Please contact your personal customer service worker.%n"
-						+ "------------------------------------------------%n");
+				Logger.getInstance().print(TextTemplate.OutOfAccountNumberInputTrysText);
 				break;
 			}
 			String inputAccountNumber = scanner.next();
 			--inputTrys;
-			//if(inputAccountNumber.equals(s_sessionAccountNumber))
 			if(s_sessionAccountNumber.equals(inputAccountNumber))
 			{
 				result = true;
@@ -300,9 +438,7 @@ public class Bank
 			}
 			else if(inputTrys > 0)
 			{
-				System.out.printf("------------------------------------------------%n"
-						+ "You've entered wrong Account Number.%nNumber of remaining trys: %d.%n"
-						+ "Please repeat your Input: ", inputTrys);
+				Logger.getInstance().print(TextTemplate.InvalidAccountNumberEnteredText, inputTrys);
 			}
 		}
 		return result;
@@ -313,16 +449,13 @@ public class Bank
 		boolean result = false;
 		int inputTrys = 3;
 		
-		System.out.printf("Please enter your Password: ");
+		Logger.getInstance().print(TextTemplate.SystemRequestForPasswordText);
 		
 		while(result == false)
 		{
 			if(inputTrys <= 0)
 			{
-				System.out.printf("------------------------------------------------%n"
-						+ "You've entered wrong Password and there are no more Retrys left.%n"
-						+ "Please contact your personal customer service worker%n"
-						+ "------------------------------------------------%n");
+				Logger.getInstance().print(TextTemplate.OutOfPasswordInputTrysText);
 				break;
 			}
 			String inputAccountPassword = scanner.next();
@@ -334,16 +467,48 @@ public class Bank
 			}
 			else if(inputTrys > 0)
 			{
-				System.out.printf("------------------------------------------------%n"
-						+ "You've entered wrong Password.%nNumber of remaining trys: %d.%n"
-						+ "Please repeat your Input: ", inputTrys);
+				Logger.getInstance().print(TextTemplate.InvalidPasswordEnteredText, inputTrys);
 			}
 		}
 		return result;
 	}
 	
+	private BankService acquierCustomerServiceRequest(PrivateCustomer customer, Scanner scanner)
+	{
+		BankService chosenRequest = BankService.BankService_Default;
+		Logger.getInstance().print(TextTemplate.BankServicesListText, customer.m_surname, customer.m_lastname);
+		String serviceRequest = scanner.next();
+		while(!m_servicesList.containsKey(serviceRequest))
+		{
+			Logger.getInstance().print(TextTemplate.InvalidInputForServiceRequestText, serviceRequest);
+			serviceRequest = scanner.next();
+		}
+		switch(m_servicesList.get(serviceRequest))
+		{
+		case BankService_BalanceCheck:
+			chosenRequest = BankService.BankService_BalanceCheck;
+			break;
+		case BankService_Withdraw:
+			chosenRequest = BankService.BankService_Withdraw;
+			break;
+		case BankService_Deposit:
+			chosenRequest = BankService.BankService_Deposit;
+			break;
+		case BankService_Transfer:
+			chosenRequest = BankService.BankService_Transfer;
+			break;
+		case BankService_CloseService:
+			chosenRequest = BankService.BankService_CloseService;
+			break;
+		default:
+			break;
+		}
+		return chosenRequest;
+	}
+	
 	//Member Fields for every Object of class Bank
 	private Map<String, Account> m_savedAccounts;
+	private Map<String, String> m_lastnameToAccountMapping;
 	private Map<String, BankService> m_servicesList;
 	private Random m_randomizer;
 	
