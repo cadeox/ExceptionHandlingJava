@@ -1,0 +1,179 @@
+package src;
+import java.io.IOException;
+import java.util.InputMismatchException;
+import java.util.Scanner;
+
+class OutOfMoneyException extends Exception {
+	public OutOfMoneyException(String message) {
+		super(message);
+	}
+}
+
+public class Main {
+	public static void main(String[] args) {
+		Scanner eingabe = new Scanner(System.in);
+		
+		try {
+			Bankkonto kontoMax = new Bankkonto("1234", 1000);
+			Bankkonto kontoLisa = new Bankkonto("5678", 0);
+			//Bankkonto kontoMitFehler = new Bankkonto("", -1000);
+			
+			
+			while (true) {
+				System.out.println("Funktion Auswählen:\n 1 für Einzahlung \n 2 für Auszahlung \n 3 für Überweisung \n 4 für Kontostand abfragen \n 5 zum Beenden");
+				try {
+					int funktionAuswahl = eingabe.nextInt();
+					if (funktionAuswahl == 5) {
+						System.out.println("Auf Wiedersehen.");
+						break;
+						}
+					
+						switch (funktionAuswahl) {
+						case 1:
+							einzahlungTaetigen(eingabe, kontoMax);
+							break;
+						case 2:
+							auszahlungTaetigen(eingabe, kontoMax);
+							break;
+						case 3:
+							ueberweisungTaetigen(eingabe, kontoMax, kontoLisa);
+							break;
+						case 4:
+							checkKontostand(kontoMax);
+							break;
+						default:
+							System.out.println("Ungültige Eingabe. Bitte geben Sie eine gültige Eingabe ein.");
+							break;
+						}
+				} catch(InputMismatchException e) {
+					System.out.println("Ungültige Eingabe. Bitte geben Sie eine gültige Eingabe ein.");
+					eingabe.nextLine(); //leehrt den Scanner Buffer
+				} catch(ArithmeticException e) {
+					System.out.println(e.getMessage());
+					eingabe.nextLine();
+				}
+			}
+			
+		} catch(IOException e) {
+			System.out.println("Fehler beim Initialisieren der Bankkonten: " + e.getMessage());
+		} finally {
+			eingabe.close();
+			System.out.println("System: Eingabe wurde abgeschlossen.");
+		}
+	}
+	
+	public static void einzahlungTaetigen(Scanner eingabe, Bankkonto konto) {
+		System.out.println("Welcher Betrag soll eingezahlt werden?");
+		double betragEinzahlung = eingabe.nextDouble();
+		if(betragEinzahlung < 0) {
+			throw new ArithmeticException("Negative Beträge können nicht eingezahlt werden.");
+		}
+		konto.aendernKontostand(KontoAktion.Einzahlung, betragEinzahlung);
+	}
+	
+	public static void auszahlungTaetigen(Scanner eingabe, Bankkonto konto)	{
+		try {
+			System.out.println("Welcher Betrag soll ausgezahlt werden?");
+			double betragAuszahlung = eingabe.nextDouble();
+			if(konto.bekommenKontostand() < betragAuszahlung) {
+				throw new OutOfMoneyException("Betrag überschreitet den Kontostand.");
+			}
+			else if(betragAuszahlung < 0) {
+				throw new ArithmeticException("Negative Beträge können nicht ausgezahlt werden.");
+			}
+			konto.aendernKontostand(KontoAktion.Auszahlung, betragAuszahlung);
+		} catch(OutOfMoneyException e) {
+			System.out.println(e.getMessage());
+		}
+	}
+	
+	public static void ueberweisungTaetigen(Scanner eingabe, Bankkonto senderKonto, Bankkonto empfaengerKonto) {
+		System.out.println("Kontonummer des Empfängers angeben:");
+		String ueberweisungKontonummer = eingabe.next();
+		
+		if(empfaengerKonto.checkKontonummer(ueberweisungKontonummer)) {
+			System.out.println("Überweisungsbetrag angeben:");
+			double betragUeberweisung = eingabe.nextDouble();
+			senderKonto.aendernKontostand(KontoAktion.Auszahlung, betragUeberweisung);
+			empfaengerKonto.aendernKontostand(KontoAktion.Einzahlung, betragUeberweisung);
+			System.out.println("Es wurden " + betragUeberweisung + " EUR an die Kontonummer " + ueberweisungKontonummer + " überwiesen.");
+		}
+	}
+	
+	public static void checkKontostand(Bankkonto konto) {
+		System.out.println("Ihr Kontostand beträgt " + konto.bekommenKontostand());
+	}
+}
+
+
+
+
+/*
+ * Variante ohne Exceptions
+package src;
+import java.util.Scanner;
+
+public class Main {
+	public static void main(String[] args) {
+		Scanner eingabe = new Scanner(System.in);
+		Bankkonto kontoMax = new Bankkonto("1234", 1000);
+		Bankkonto kontoLisa = new Bankkonto("5678", 0);
+		
+		while (true) {
+			System.out.println("Funktion Auswählen:\n 1 für Einzahlung \n 2 für Auszahlung \n 3 für Überweisung \n 4 für Kontostand abfragen \n 5 zum Beenden");
+			int funktionAuswahl = eingabe.nextInt();
+			if (funktionAuswahl == 5) {
+				System.out.println("Auf Wiedersehen");
+				break;
+				}
+			switch (funktionAuswahl) {
+			case 1:
+				einzahlungTaetigen(eingabe, kontoMax);
+				break;
+			case 2:
+				auszahlungTaetigen(eingabe, kontoMax);
+				break;
+			case 3:
+				ueberweisungTaetigen(eingabe, kontoMax, kontoLisa);
+				break;
+			case 4:
+				checkKontostand(kontoMax);
+				break;
+			default:
+				System.out.println("Ungültige Auswahl.");
+				break;
+			}
+		}
+		eingabe.close();
+	}
+	
+	public static void einzahlungTaetigen(Scanner eingabe, Bankkonto konto) {
+		System.out.println("Welcher Betrag soll eingezahlt werden?");
+		double betragEinzahlung = eingabe.nextDouble();
+		konto.aendernKontostand(KontoAktion.Einzahlung, betragEinzahlung);
+	}
+	
+	public static void auszahlungTaetigen(Scanner eingabe, Bankkonto konto) {
+		System.out.println("Welcher Betrag soll ausgezahlt werden?");
+		double betragAuszahlung = eingabe.nextDouble();
+		konto.aendernKontostand(KontoAktion.Auszahlung, betragAuszahlung);
+	}
+	
+	public static void ueberweisungTaetigen(Scanner eingabe, Bankkonto senderKonto, Bankkonto empfaengerKonto) {
+		System.out.println("Kontonummer des Empfängers angeben:");
+		String ueberweisungKontonummer = eingabe.next();
+		
+		if(empfaengerKonto.checkKontonummer(ueberweisungKontonummer)) {
+			System.out.println("Überweisungsbetrag angeben:");
+			double betragUeberweisung = eingabe.nextDouble();
+			senderKonto.aendernKontostand(KontoAktion.Auszahlung, betragUeberweisung);
+			empfaengerKonto.aendernKontostand(KontoAktion.Einzahlung, betragUeberweisung);
+			System.out.println("Es wurden " + betragUeberweisung + " EUR an die Kontonummer " + ueberweisungKontonummer + " überwiesen.");
+		}
+	}
+	
+	public static void checkKontostand(Bankkonto konto) {
+		System.out.println("Ihr Kontostand beträgt " + konto.bekommenKontostand());
+	}
+}
+*/
