@@ -60,3 +60,9 @@ local.properties
 #.project
 /ExceptionHandling.class
 /OutOfRangeException.class
+/Bankkonto.class
+/KontoAktion.class
+/Main.class
+/OutOfMoneyException.class
+/BankKonto.class
+/Bankonto.class
